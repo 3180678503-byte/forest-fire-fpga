@@ -1,0 +1,23 @@
+<!doctype html><meta charset="utf-8"><title>30TAI 无线控制</title>
+<style>body{font:16px system-ui;background:#101820;color:#eaf3fa;max-width:1050px;margin:32px auto}button,select,input{font:inherit;margin:6px;padding:10px;border-radius:6px}pre{white-space:pre-wrap;background:#192733;padding:18px;max-height:65vh;overflow:auto}.hint{color:#b6cbdc}</style>
+<h1>30TAI 无线控制</h1><p class="hint">电脑登录后后台自动准备控制服务与热点。开发板、ESP上电连接后，选择参数，直接点击“保存并启动”。控制经ESP32无线链路，画面从HDMI输出。</p>
+<p id="connection">正在连接电脑服务…</p>
+<button data-control onclick="send('status')">查询状态</button>
+<select id="profile"><option value="live">实时相机＋HDMI</option><option value="offline">离线测试图片＋模型</option><option value="diagnostic">离线重复显示诊断＋mock</option></select>
+<button data-control onclick="startSelected('start')">保存并启动</button><button data-control onclick="send('stop')">停止</button><button data-control onclick="startSelected('restart')">保存并重启</button><button data-control onclick="send('logs')">最近日志</button>
+<p>Qwen <select id="qwen"><option value="remote">真实Qwen</option><option value="mock">模拟复核（不调用云端）</option><option value="off">关闭</option></select>冷却秒数<input id="cooldown" type="number" value="10" min="0" max="3600" style="width:90px"></p>
+<p>检测阈值<input id="confidence" type="number" min="0" max="1" step="0.05" value="0.25" style="width:85px">NMS IoU<input id="iou" type="number" min="0" max="1" step="0.05" value="0.7" style="width:85px"><button data-control onclick="saveSelected()">仅保存参数</button></p>
+<p class="hint">选择“真实Qwen”并启动后，候选目标裁剪图会上传云端复核。若程序正在运行，修改参数后请用“保存并重启”。</p>
+<div id="notice"></div><pre id="state">正在读取状态…</pre>
+<script>
+let online=false,busy=false,currentMode='';
+function buttons(){document.querySelectorAll('[data-control]').forEach(b=>b.disabled=busy||!online)}
+function settings(){let value={qwen:qwen.value,cooldown:Number(cooldown.value),confidence:Number(confidence.value),iou:Number(iou.value)};for(let id of ['cooldown','confidence','iou']){let input=document.getElementById(id);if(input.value===''||!input.checkValidity())throw Error('请检查冷却秒数、检测阈值及IoU的范围。')}return value}
+async function readState(){let r=await fetch('/api/state',{cache:'no-store'});if(!r.ok)throw Error('电脑服务状态读取失败');return r.json()}
+async function command(action,args={}){let s=await readState();if(!s.online)throw Error('设备未连接，请检查开发板、ESP供电及电脑热点。');let r=await fetch('/api/command',{method:'POST',headers:{'Content-Type':'application/json','X-Control-Local':'1'},body:JSON.stringify({action,args,ttl:90})});let response=await r.json();if(!r.ok)throw Error(response.error||'命令提交失败');let until=Date.now()+95000;while(Date.now()<until){let s=await readState();let c=s.commands.find(c=>c.id===response.id);if(c&&['succeeded','failed','expired'].includes(c.state)){let result=c.result?JSON.parse(c.result):{};if(c.state!=='succeeded')throw Error(result.error||('命令'+c.state));return result.result}await new Promise(r=>setTimeout(r,300))}throw Error('等待设备确认超时，请查询状态后再操作。')}
+async function operate(work){if(busy)return;busy=true;buttons();try{await work()}catch(e){notice.textContent=e.message}finally{busy=false;buttons()}}
+async function send(action,args={}){await operate(async()=>{notice.textContent='等待设备确认…';let result=await command(action,args);notice.textContent=JSON.stringify(result)})}
+async function saveSelected(){await operate(async()=>{let value=settings();notice.textContent='正在保存参数…';await command('set_config',value);notice.textContent='参数已保存，下次启动生效。'})}
+async function startSelected(action){await operate(async()=>{let value=settings();let selectedProfile=profile.value;if(currentMode!=='auto'&&value.qwen!=='off'&&value.qwen!==currentMode)throw Error('电脑服务尚未更新，请等待后台服务恢复后刷新网页。');notice.textContent='正在保存参数…';await command('set_config',value);notice.textContent='参数已确认，正在启动…';let result=await command(action,{profile:selectedProfile});notice.textContent='设备已确认：'+JSON.stringify(result)})}
+async function update(){try{let s=await readState();online=s.online;currentMode=s.cloud_mode;connection.textContent=online?'设备在线，可以选择并启动。':'电脑服务正常，等待开发板和ESP连接；请检查供电及电脑热点。';let commands=s.commands.map(c=>({action:c.action,state:c.state,id:c.id,roundtrip_ms:c.completed?Math.round((c.completed-c.created)*1000):null,result:c.result?JSON.parse(c.result):null}));state.textContent=JSON.stringify({设备在线:s.online,无线来源:s.link.peer,板端状态:s.link.telemetry,Qwen服务:s.cloud_mode==='auto'?'网页选择':s.cloud_mode,最近命令:commands,复核任务:s.jobs},null,2)}catch(e){online=false;connection.textContent='电脑控制服务暂未连接，后台正在恢复，请稍后刷新。';state.textContent=String(e)}buttons();setTimeout(update,1000)}buttons();update();
+</script>

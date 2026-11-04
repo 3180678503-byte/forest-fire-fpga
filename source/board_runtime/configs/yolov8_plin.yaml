@@ -1,0 +1,18 @@
+sys:
+  device: axi://zg330aiu?npu=0x40000000&dma=0x80000000
+pipeline:
+  camera:
+    width: 1920
+    height: 1080
+    fps: 60
+    vtc: false
+  icore:
+    model: yolov8n_fire_smoke
+    json: ./imodel/forest_fire_imagemake_ZG.json
+    raw: ./imodel/forest_fire_imagemake_ZG.raw
+    net_w: 416
+    net_h: 416
+    conf: 0.25
+    iou_thresh: 0.70
+    classes: [fire, smoke]
+    detpost: false

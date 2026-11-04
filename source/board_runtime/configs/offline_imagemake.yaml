@@ -1,0 +1,8 @@
+# Diagnostic offline test: RGB letterbox -> signed BGR -> physical input model.
+# Only the separate evaluator uses CPU preprocessing; the live app never does.
+device: axi://zg330aiu?npu=0x40000000&dma=0x80000000
+model:
+  json: ./imodel/forest_fire_imagemake_ZG.json
+  raw: ./imodel/forest_fire_imagemake_ZG.raw
+  conf: 0.25
+  iou: 0.70

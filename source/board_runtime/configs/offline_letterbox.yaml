@@ -1,0 +1,7 @@
+# Separate offline comparison only. Does not access SDI or ImageMake.
+device: axi://zg330aiu?npu=0x40000000&dma=0x80000000
+model:
+  json: ./imodel/forest_fire_plin_ZG.json
+  raw: ./imodel/forest_fire_plin_ZG.raw
+  conf: 0.25
+  iou: 0.70

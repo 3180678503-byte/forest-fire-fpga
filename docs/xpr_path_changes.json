@@ -1,0 +1,22 @@
+[
+  {
+    "attribute": "Val",
+    "from": "$PPRDIR/../../../an5641_mipi_20261022/hardware/PS_AI IP/PS_AI IP/processing_system7_v5_5",
+    "to": "$PPRDIR/../ip_repo/processing_system7_v5_5"
+  },
+  {
+    "attribute": "Val",
+    "from": "$PPRDIR/../../../an5641_mipi_20261022/hardware/AI_Mate_IP/AI_Mate_IP_repo",
+    "to": "$PPRDIR/../ip_repo/AI_Mate_IP_repo"
+  },
+  {
+    "attribute": "Path",
+    "from": "$PPRDIR/../../rtl/an5641_reset_cdc.xdc",
+    "to": "$PPRDIR/../rtl_reference/an5641_reset_cdc.xdc"
+  },
+  {
+    "attribute": "Path",
+    "from": "$PPRDIR/../../rtl/an5641_input_cdc.xdc",
+    "to": "$PPRDIR/../rtl_reference/an5641_input_cdc.xdc"
+  }
+]
